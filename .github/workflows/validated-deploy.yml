@@ -33,7 +33,7 @@ jobs:
         run: terraform init
         working-directory: .
         
-      - name: Plan # Not ready yet, the terraform should be adapted to use a remote backend and get secrets from keyvault
+      - name: Plan
         id: plan
         uses: ./.github/actions/plan
         with:
