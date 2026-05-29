@@ -9,6 +9,6 @@ module "ressource_group_naming" {
 }
 
 resource "azurerm_resource_group" "ressource_group" {
-  name     = module.ressource_group_naming.resource_group
+  name     = module.ressource_group_naming.name
   location = "West Europe"
 }
