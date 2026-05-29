@@ -16,9 +16,9 @@ This project provides a simple foundation for starting Azure infrastructure with
 ## Project structure
 
 - `providers.tf`: Terraform version, required providers, and `azurerm` backend
-- `backend-dev.hcl`: backend settings for `dev`
-- `backend-test.hcl`: backend settings for `test`
-- `backend-prod.hcl`: backend settings for `prod`
+- `environments/backend-dev.hcl`: backend settings for `dev`
+- `environments/backend-test.hcl`: backend settings for `test`
+- `environments/backend-prod.hcl`: backend settings for `prod`
 - `main.tf`: naming module and `azurerm_resource_group` resource
 
 ## Prerequisites
@@ -45,9 +45,9 @@ az account set --subscription "<SUBSCRIPTION_ID_OR_NAME>"
 
 The backend type is declared in `providers.tf`, and each environment has its own backend config file:
 
-- `backend-dev.hcl`
-- `backend-test.hcl`
-- `backend-prod.hcl`
+- `environments/backend-dev.hcl`
+- `environments/backend-test.hcl`
+- `environments/backend-prod.hcl`
 
 Each file sets:
 
@@ -79,7 +79,7 @@ From the project root:
 
 ```bash
 terraform fmt
-terraform init -reconfigure -backend-config=backend-dev.hcl
+terraform init -reconfigure -backend-config=environments/backend-dev.hcl
 terraform validate
 terraform plan -var="environment=dev" -out tfplan
 terraform apply tfplan
@@ -88,7 +88,7 @@ terraform apply tfplan
 To use another environment, switch both flags:
 
 ```bash
-terraform init -reconfigure -backend-config=backend-test.hcl
+terraform init -reconfigure -backend-config=environments/backend-test.hcl
 terraform plan -var="environment=test" -out tfplan
 ```
 
