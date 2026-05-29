@@ -73,7 +73,7 @@ jobs:
           terraform_wrapper: true
 
       - name: Terraform Init
-        run: terraform init -reconfigure -backend-config=backend-${{ inputs.environment }}.hcl
+        run: terraform init -reconfigure -backend-config=environments/backend-${{ inputs.environment }}.hcl
         working-directory: ${{ inputs.working-directory }}
         
       - name: Plan
@@ -126,7 +126,7 @@ jobs:
           terraform_wrapper: true
 
       - name: Terraform Init
-        run: terraform init -reconfigure -backend-config=backend-${{ inputs.environment }}.hcl
+        run: terraform init -reconfigure -backend-config=environments/backend-${{ inputs.environment }}.hcl
         working-directory: ${{ inputs.working-directory }}
         
       - name: Apply
