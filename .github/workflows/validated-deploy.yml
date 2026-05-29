@@ -1,8 +1,50 @@
 name: Terraform Validated Deploy
- 
-on:
-  workflow_dispatch:
 
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory where terraform commands are executed
+        required: false
+        type: string
+        default: .
+      terraform-version:
+        description: Terraform version to install
+        required: false
+        type: string
+        default: 1.14.1
+      approvers:
+        description: Comma-separated GitHub usernames for manual approval
+        required: false
+        type: string
+        default: h0livier
+      approval-issue-title:
+        description: Title used for the manual approval issue
+        required: false
+        type: string
+        default: Manual Approval Required for Terraform Apply
+      approval-issue-body:
+        description: Body used for the manual approval issue
+        required: false
+        type: string
+        default: Please approve or deny the deployment.
+      environment:
+        description: Deployment environment (e.g., dev, test, prod)
+        required: false
+        type: string
+        default: dev
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      AZURE_TENANT_ID:
+        required: true
+    outputs:
+      has-changes:
+        description: Whether terraform plan detected any changes
+        value: ${{ jobs.plan.outputs.has-changes }}
+  
 jobs:
   plan:
     permissions:
@@ -17,6 +59,7 @@ jobs:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_USE_OIDC: true
+      TF_VAR_environment: ${{ inputs.environment }}
 
     runs-on: ubuntu-latest
     steps:
@@ -26,36 +69,36 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: 1.14.1
+          terraform_version: ${{ inputs.terraform-version }}
           terraform_wrapper: true
 
       - name: Terraform Init
         run: terraform init
-        working-directory: .
+        working-directory: ${{ inputs.working-directory }}
         
       - name: Plan
         id: plan
         uses: ./.github/actions/plan
         with:
-          working-directory: .
+          working-directory: ${{ inputs.working-directory }}
 
   approval:
     name: Manual Approval
     runs-on: ubuntu-latest
     needs: plan
     # Only proceed when terraform reported changes
-    if: success() &&needs.plan.outputs.has-changes == 'true'
+    if: success() && needs.plan.outputs.has-changes == 'true'
     permissions:
       issues: write # Required for creating issues for manual approval
     steps:
-    - name: Await Manual Approval
-      uses: trstringer/manual-approval@74d99dff7380e3e4b122d4ededcbca2b6ce59367 # v1.12
-      with:
-        secret: ${{ github.TOKEN }}
-        approvers: h0livier # Replace with GitHub usernames, with the free version you can only have an issue assigned to one username
-        minimum-approvals: 1
-        issue-title: "Manual Approval Required for Terraform Apply"
-        issue-body: "Please approve or deny the deployment."
+      - name: Await Manual Approval
+        uses: trstringer/manual-approval@74d99dff7380e3e4b122d4ededcbca2b6ce59367 # v1.12
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ inputs.approvers }}
+          minimum-approvals: 1
+          issue-title: ${{ inputs.approval-issue-title }}
+          issue-body: ${{ inputs.approval-issue-body }}
 
   apply:
     permissions:
@@ -67,6 +110,7 @@ jobs:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_USE_OIDC: true
+      TF_VAR_environment: ${{ inputs.environment }}
       
     runs-on: ubuntu-latest
     needs: [plan, approval]
@@ -78,12 +122,14 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: 1.14.1
+          terraform_version: ${{ inputs.terraform-version }}
           terraform_wrapper: true
 
       - name: Terraform Init
         run: terraform init
+        working-directory: ${{ inputs.working-directory }}
         
       - name: Apply
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: terraform apply -auto-approve -input=false
+        working-directory: ${{ inputs.working-directory }}

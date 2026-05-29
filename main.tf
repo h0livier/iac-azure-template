@@ -5,7 +5,7 @@ module "ressource_group_naming" {
     project = "test"
     type    = "rg"
   }
-  environment = "d"
+  environment = var.environment
 }
 
 resource "azurerm_resource_group" "ressource_group" {

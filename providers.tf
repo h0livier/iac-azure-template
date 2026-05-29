@@ -9,8 +9,8 @@ terraform {
   backend "azurerm" {
     resource_group_name  = "ohaymngmtproject"
     storage_account_name = "ohaymngmtstorage"
-    container_name       = "tfstate"
-    key                  = "iac-azure-template.tfstate"
+    container_name       = "iac-azure-template"
+    key                  = local.statefile[var.environment]
   }
 }
 
