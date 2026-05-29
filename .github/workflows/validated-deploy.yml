@@ -1,0 +1,89 @@
+name: Terraform Validated Deploy
+ 
+on:
+  workflow_dispatch:
+
+jobs:
+  plan:
+    permissions:
+      contents: write
+      id-token: write  # Required for OIDC
+
+    outputs:
+      has-changes: ${{ steps.plan.outputs.has-changes }}
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_OIDC: true
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+ 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.1
+          terraform_wrapper: true
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: .
+        
+      - name: Plan # Not ready yet, the terraform should be adapted to use a remote backend and get secrets from keyvault
+        id: plan
+        uses: ./.github/actions/plan
+        with:
+          working-directory: .
+
+  approval:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    needs: plan
+    # Only proceed when terraform reported changes
+    if: success() &&needs.plan.outputs.has-changes == 'true'
+    permissions:
+      issues: write # Required for creating issues for manual approval
+    steps:
+    - name: Await Manual Approval
+      uses: trstringer/manual-approval@74d99dff7380e3e4b122d4ededcbca2b6ce59367 # v1.12
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: h0livier # Replace with GitHub usernames, with the free version you can only have an issue assigned to one username
+        minimum-approvals: 1
+        issue-title: "Manual Approval Required for Terraform Apply"
+        issue-body: "Please approve or deny the deployment."
+
+  apply:
+    permissions:
+      contents: write
+      id-token: write  # Required for OIDC
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_OIDC: true
+      
+    runs-on: ubuntu-latest
+    needs: [plan, approval]
+    if: needs.plan.outputs.has-changes == 'true' && needs.approval.result == 'success'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+ 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.1
+          terraform_wrapper: true
+
+      - name: Terraform Init
+        run: terraform init
+        
+      - name: Apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: terraform apply -auto-approve -input=false

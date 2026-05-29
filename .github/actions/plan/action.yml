@@ -1,0 +1,52 @@
+name: Terraform Plan
+description: Run terraform plan and publish a summarized result to the GitHub step summary
+
+outputs:
+  has-changes:
+    description: Whether terraform plan detected any changes
+    value: ${{ steps.plan.outputs.has-changes }}
+
+inputs:
+  working-directory:
+    description: Directory where terraform commands are executed
+    required: false
+    default: .
+
+runs:
+  using: composite
+  steps:
+    - id: plan
+      name: Plan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        # Generate terraform plan
+        terraform plan -input=false -no-color -out=plannedstate
+
+        # Save the plan output to a file for parsing
+        terraform show -no-color plannedstate > plannedstate.txt
+
+        has_changes=true
+
+        if grep -q 'No changes. Your infrastructure matches the configuration.' plannedstate.txt; then
+          has_changes=false
+        fi
+
+        echo "has-changes=$has_changes" >> "$GITHUB_OUTPUT"
+
+        # Parse the plan output and format it for GitHub summary
+        {
+          awk '/No changes. Your infrastructure matches the configuration./ {
+              print "## " $0
+              print "Terraform has compared your real infrastructure against your configuration and found no differences, so no changes are needed."
+              exit
+          }' plannedstate.txt
+          awk '/Terraform will perform the following actions:/ {
+              print "## Terraform will perform the following actions:"
+              print "|Action|Resource|"
+              print "|------|--------|"
+              exit
+          }' plannedstate.txt
+          awk '/Terraform used the selected/{ next } /will be/ || /must be/ {print "|" $5 "|" $2 "|"; next} /Plan:/{ print "## " $0; next }' plannedstate.txt \
+              | sed -e 's/created/:white_check_mark: create/' -e 's/destroyed/:bangbang: destroy/' -e 's/replaced/:recycle: replace/'
+        } >> "$GITHUB_STEP_SUMMARY"
