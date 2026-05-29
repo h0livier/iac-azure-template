@@ -1,5 +1,7 @@
 # iac-azure-template
 
+[![Terraform Continuous Integration](https://github.com/h0livier/iac-azure-template/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/h0livier/iac-azure-template/actions/workflows/continuous-integration.yml)
+
 Terraform template to create an Azure Resource Group with a centralized naming convention.
 
 ## Objective
