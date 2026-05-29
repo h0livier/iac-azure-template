@@ -1,8 +1,9 @@
-module "ressource_group_naming"{
-  source = "git@github.com:h0livier/iac-naming-helper.git?ref=main"
+module "ressource_group_naming" {
+  source = "git::https://github.com/h0livier/iac-naming-helper.git?ref=main"
 
   data = {
-    project     = "test"
+    project = "test"
+    type    = "rg"
   }
   environment = "d"
 }
