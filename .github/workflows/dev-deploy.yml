@@ -1,0 +1,21 @@
+name: Terraform Dev Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    permissions:
+      contents: write
+      id-token: write
+      issues: write
+    uses: ./.github/workflows/validated-deploy.yml
+    with:
+      environment: dev
+      approvers: h0livier
+      approval-issue-title: Manual Approval Required for Dev Terraform Apply
+      approval-issue-body: Please approve or deny the dev deployment.
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
