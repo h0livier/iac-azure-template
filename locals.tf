@@ -4,4 +4,5 @@ locals {
     "test" = "t"
     "prod" = "p"
   }
+  environment = local.environments[var.environment]
 }
