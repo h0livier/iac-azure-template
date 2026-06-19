@@ -1,0 +1,12 @@
+name: Test environment variable
+
+on:
+  workflow_dispatch:
+
+jobs:
+    test-env-var:
+        runs-on: ubuntu-latest
+        environment: dev
+        steps:
+        - name: Check environment variable
+          run: echo "The value of the environment variable is:" ${{ env.TEST }}
