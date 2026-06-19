@@ -11,3 +11,4 @@ jobs:
         - name: Check environment variable
           run: |
             echo "The value of the environment variable is: ${{ vars.TEST_ENV }}"
+            echo "here is the other: ${{ secrets.TEST }}"
