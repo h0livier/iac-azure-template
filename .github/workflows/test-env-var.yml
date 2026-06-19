@@ -9,4 +9,5 @@ jobs:
         environment: dev
         steps:
         - name: Check environment variable
-          run: echo "The value of the environment variable is:" ${{ env.TEST_ENV }} ${{ secrets.TEST }}
+          run: |
+            echo "The value of the environment variable is: ${{ env.TEST_ENV }} ${{ secrets.TEST }}"
